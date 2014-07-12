@@ -1,0 +1,3 @@
+x = 3, y = 2 |- x evalto 3 by E-Var2 {
+    x = 3 |- x evalto 3 by E-Var1 {}
+}

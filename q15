@@ -1,0 +1,5 @@
+Z + S(S(Z)) evalto S(S(Z)) by E-Plus {
+    Z evalto Z by E-Const {};
+    S(S(Z)) evalto S(S(Z)) by E-Const {};
+    Z plus S(S(Z)) is S(S(Z)) by P-Zero {}
+}

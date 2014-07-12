@@ -1,0 +1,7 @@
+S(S(Z)) times Z is Z by T-Succ {
+    S(Z) times Z is Z by T-Succ {
+        Z times Z is Z by T-Zero { };
+        Z plus Z is Z by P-Zero { };
+    };
+    Z plus Z is Z by P-Zero { };
+}

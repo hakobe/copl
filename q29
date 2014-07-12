@@ -1,0 +1,16 @@
+3 + if -23 < -2 * 8 then 8 else 2 + 4 evalto 11 by E-Plus {
+    3 evalto 3 by E-Int {};
+    if -23 < -2 * 8 then 8 else 2 + 4 evalto 8 by E-IfT {
+        -23 < -2 * 8 evalto true by E-Lt {
+            -23 evalto -23 by E-Int {};
+            -2 * 8 evalto -16 by E-Times {
+                -2 evalto -2 by E-Int {};
+                8 evalto 8 by E-Int {};
+                -2 times 8 is -16 by B-Times {};
+            };
+            -23 less than -16 is true by B-Lt {};
+        };
+        8 evalto 8 by E-Int {};
+    };
+    3 plus 8 is 11 by B-Plus {}
+}

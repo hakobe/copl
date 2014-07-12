@@ -1,0 +1,5 @@
+S(S(Z)) is less than S(S(S(Z))) by L-SuccSucc {
+    S(Z) is less than S(S(Z)) by L-SuccSucc {
+        Z is less than S(Z) by L-Zero { }
+    }
+}

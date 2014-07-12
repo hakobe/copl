@@ -1,0 +1,5 @@
+3 + 5 evalto 8 by E-Plus {
+    3 evalto 3 by E-Int {};
+    5 evalto 5 by E-Int {};
+    3 plus 5 is 8 by B-Plus {};
+}

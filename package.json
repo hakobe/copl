@@ -6,7 +6,13 @@
   "author": "hakobe",
   "license": "MIT",
   "devDependencies": {
+    "browserify": "^4.2.1",
     "coffee-script": "^1.7.1",
-    "jison": "^0.4.13"
+    "glob": "^4.0.4",
+    "gulp": "^3.8.6",
+    "gulp-coffee": "^2.1.1",
+    "gulp-jison": "^1.0.0",
+    "jison": "^0.4.13",
+    "vinyl-source-stream": "^0.1.1"
   }
 }

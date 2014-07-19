@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <script src="./build/bundle-browserify.js"></script>
+    <script>
+      (function() {
+        'use strict';
+        var ml = require('ml');
+        function tryShowResult(value, out) {
+          try {
+            var result = ml(value);
+            out.innerText = result[1].toString();
+          } catch(e) {
+            out.innerText = e.toString();
+          }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('hi');
+          var textarea = document.getElementById('hakobe-ml-input')
+          var out = document.getElementById('hakobe-ml-output')
+          tryShowResult( textarea.value, out);
+          textarea.addEventListener('keyup', function() {
+            tryShowResult( textarea.value, out);
+          });
+        });
+      })();
+    </script>
+    <textarea rows=5 cols=50 style="font-size:1.2em" id="hakobe-ml-input">|- let f = fun x -> x * 2 in f 3</textarea>
+    <pre id="hakobe-ml-output"></pre>
+  </body>
+</html>

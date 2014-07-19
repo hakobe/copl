@@ -9,6 +9,7 @@
 "evalto"              return 'EVALTO'
 "fun"                 return 'FUN'
 "let"                 return 'LET'
+"rec"                 return 'REC'
 "in"                  return 'IN'
 "if"                  return 'IF'
 "then"                return 'THEN'
@@ -76,12 +77,12 @@ simplee
         {$$ = new yy.Node('FUN', [$2, $4]);}
     | LET defvar IN e %prec LETEXP
         {$$ = new yy.Node('LET', [$2, $4]);}
+    | LET REC defvar IN e %prec LETEXP
+        {$$ = new yy.Node('LETREC', [$3, $5]);}
     | IF e THEN e ELSE e %prec IFEXP
         {$$ = new yy.Node('IF', [$2, $4, $6]);}
     | var
         {$$ = $1;}
-    | '-' INT %prec UMINUS
-        {$$ = new yy.Node('INT', [], -1 * parseInt(yytext));}
     | INT
         {$$ = new yy.Node('INT', [], parseInt(yytext));}
     | BOOL
@@ -93,6 +94,8 @@ e
         {$$ = $1;}
     | e simplee %prec APPLY
         {$$ = new yy.Node('APPLY', [$1, $2]);}
+    | '-' INT %prec UMINUS
+        {$$ = new yy.Node('INT', [], -1 * parseInt(yytext));}
     | e '<' e
         {$$ = new yy.Node('LT', [$1, $3]);}
     | e '+' e

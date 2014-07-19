@@ -8,11 +8,13 @@ class Node
   toString: () ->
     str = switch @type
       when 'DEFVAR'
-        "#{ @children[0].value } = #{ @children[1].toString() }"
+        "#{ @children[0].value } = #{ @children[1].toString().replace(/(?:^\(|\)$)/g, '') }"
       when 'APPLY'
-        "(#{ @children[0].toString() } #{ @children[1].toString() })"
+        "#{ @children[0].toString() } #{ @children[1].toString() }"
       when 'LET'
         "(let #{ @children[0].toString() } in #{ @children[1].toString() })"
+      when 'LETREC'
+        "(let rec #{ @children[0].toString() } in #{ @children[1].toString() })"
       when 'IF'
         "(if #{ @children[0].toString() } then #{ @children[1].toString() } else #{ @children[2].toString() })"
       when 'LT'
@@ -32,7 +34,6 @@ class Node
       when 'VAR'
         "#{ @value }"
       else
-        inspect(this)
         throw "Illigal Node"
 
 class DTNode
@@ -61,8 +62,14 @@ class DTNode
       when 'E-App'
         "#{ env }|- #{ @vars.e1.toString() } #{ @vars.e2.toString() } evalto #{ @vars.v } by E-App {\n" +
           @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
+      when 'E-AppRec'
+        "#{ env }|- #{ @vars.e1.toString() } #{ @vars.e2.toString() } evalto #{ @vars.v } by E-AppRec {\n" +
+          @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
       when 'E-Let'
         "#{ env }|- let #{ @vars.def.toString() } in #{ @vars.e2.toString() } evalto #{ @vars.v } by E-Let {\n" +
+          @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
+      when 'E-LetRec'
+        "#{ env }|- let rec #{ @vars.def.toString() } in #{ @vars.e2.toString() } evalto #{ @vars.v } by E-LetRec {\n" +
           @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
       when 'E-IfT'
         "#{ env }|- if #{ @vars.e1.toString() } then #{ @vars.e2.toString() } else #{ @vars.e3.toString() } evalto #{ @vars.v } by E-IfT {\n" +
@@ -98,7 +105,7 @@ class Def
   constructor: (@name, @value) ->
 
   toString: () ->
-    "#{ @name } = #{ @value }"
+    "#{ @name } = #{ @value.toString() }"
 
 class Closure
   constructor: (@env, @x, @e) ->
@@ -106,6 +113,13 @@ class Closure
   toString: () ->
     env = @env.map( (def) => def.toString() ).join(', ')
     "(#{ env })[fun #{ @x.toString() } -> #{ @e.toString() }]"
+
+class RecClosure
+  constructor: (@env, @name, @c) ->
+
+  toString: () ->
+    env = @env.map( (def) => def.toString() ).join(', ')
+    "(#{ env })[rec #{ @name } = fun #{ @c.x.toString() } -> #{ @c.e.toString() }]"
 
 
 parser.yy = { Node: Node };
@@ -135,15 +149,27 @@ derive = (node, env) ->
         [v2, dtn] = derive(node, env[0..-2])
         [v2, new DTNode('E-Var2', {x:x, v2:v2}, env, [dtn]) ]
     when 'APPLY'
-      [c, dtn1] = derive(node.children[0], env)
-      [v2, dtn2] = derive(node.children[1], env)
-      [v, dtn3] = derive(c.e, c.env.concat([ new Def(c.x.value, v2) ]))
-      [v, new DTNode(
-        'E-App',
-        {e1:node.children[0], e2:node.children[1], v:v},
-        env,
-        [dtn1, dtn2, dtn3]
-      )]
+      [v, dtn1] = derive(node.children[0], env)
+      if v instanceof Closure
+        c = v
+        [v2, dtn2] = derive(node.children[1], env)
+        [v, dtn3] = derive(c.e, c.env.concat([ new Def(c.x.value, v2) ]))
+        [v, new DTNode(
+          'E-App',
+          {e1:node.children[0], e2:node.children[1], v:v},
+          env,
+          [dtn1, dtn2, dtn3]
+        )]
+      else if v instanceof RecClosure
+        c = v.c
+        [v2, dtn2] = derive(node.children[1], env)
+        [v, dtn3] = derive(c.e, c.env.concat([ new Def(v.name, v), new Def(c.x.value, v2) ]))
+        [v, new DTNode(
+          'E-AppRec',
+          {e1:node.children[0], e2:node.children[1], v:v},
+          env,
+          [dtn1, dtn2, dtn3]
+        )]
     when 'DEFVAR'
       x = node.children[0].value
       [v, dtn] = derive(node.children[1], env)
@@ -156,6 +182,16 @@ derive = (node, env) ->
         {def:node.children[0], e2:node.children[1], v:v},
         env,
         [ dtn1, dtn2 ]
+      )]
+    when 'LETREC'
+      [def, dtn1] = derive(node.children[0], env)
+      recDef = new Def(def.name, new RecClosure(env, def.name, def.value))
+      [v, dtn2] = derive(node.children[1], env.concat([ recDef ]))
+      [v, new DTNode(
+        'E-LetRec',
+        {def:node.children[0], e2:node.children[1], v:v},
+        env,
+        [ dtn2 ]
       )]
     when 'IF'
       [b, dtn1] = derive(node.children[0], env)
@@ -238,7 +274,7 @@ inspect = (obj) ->
   console.log( util.inspect(obj, { depth: null }) )
 
 main = ->
-  tree = parser.parse("|- let s = fun f -> fun g -> fun x -> f x (g x) in let k = fun x -> fun y -> x in s k k 7")
+  tree = parser.parse("|- let fact = fun self -> fun n -> if n < 2 then 1 else n * self self (n - 1) in fact fact 3")
   [v, dtn] = derive(tree, [])
   console.log(dtn.toString())
 

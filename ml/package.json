@@ -1,0 +1,12 @@
+{
+  "name": "ml",
+  "version": "0.0.0",
+  "description": "Solver for http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/CoPL/index.cgi",
+  "main": "ml.coffee",
+  "author": "hakobe",
+  "license": "MIT",
+  "devDependencies": {
+    "coffee-script": "^1.7.1",
+    "jison": "^0.4.13"
+  }
+}

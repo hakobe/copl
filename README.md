@@ -20,3 +20,7 @@ node build/run.js
 ```
 open run.html
 ```
+
+### 見どころ
+- [文法定義](src/grammer.jison) 
+- [問題を解いてるところ](src/ml.coffee#L127)

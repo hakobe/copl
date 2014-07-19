@@ -1,6 +1,6 @@
 # CoPL resolver
 
-http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/CoPL/index.cgi の練習問題を解きます。今のところEvalML3くらいのものを解くことができます。
+http://www.fos.kuis.kyoto-u.ac.jp/~igarashi/CoPL/index.cgi の練習問題を解きます。今のところEvalML3くらいのものを解くことができます。[紹介記事](http://hakobe932.hatenablog.com/entry/2014/07/19/204139)。
 
 ### ビルド
 

@@ -39,6 +39,6 @@ gulp.task('watch', () =>
   gulp.watch(['src/*.coffee', 'src/*.jison'], ['default'])
 )
 
-gulp.task('default', ['grammer', 'scripts'])
+gulp.task('default', ['browserify'])
 
 

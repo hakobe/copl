@@ -9,6 +9,8 @@ class Node
     str = switch @type
       when 'DEFVAR'
         "#{ @children[0].value } = #{ @children[1].toString() }"
+      when 'APPLY'
+        "(#{ @children[0].toString() } #{ @children[1].toString() })"
       when 'LET'
         "(let #{ @children[0].toString() } in #{ @children[1].toString() })"
       when 'IF'
@@ -25,9 +27,12 @@ class Node
         "#{ @value }"
       when 'BOOL'
         "#{ @value }"
+      when 'FUN'
+        "(fun #{ @children[0].toString() } -> #{ @children[1].toString() })"
       when 'VAR'
         "#{ @value }"
       else
+        inspect(this)
         throw "Illigal Node"
 
 class DTNode
@@ -46,10 +51,15 @@ class DTNode
         "#{ env }|- #{ @vars.i } evalto #{ @vars.i } by E-Int {}"
       when 'E-Bool'
         "#{ env }|- #{ @vars.b } evalto #{ @vars.b } by E-Bool {}"
+      when 'E-Fun'
+        "#{ env }|- fun #{ @vars.c.x.toString() } -> #{ @vars.c.e.toString() } evalto #{ @vars.c.toString() } by E-Fun {}"
       when 'E-Var1'
         "#{ env }|- #{ @vars.x } evalto #{ @vars.v } by E-Var1 {}"
       when 'E-Var2'
         "#{ env }|- #{ @vars.x } evalto #{ @vars.v2 } by E-Var2 {\n" +
+          @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
+      when 'E-App'
+        "#{ env }|- #{ @vars.e1.toString() } #{ @vars.e2.toString() } evalto #{ @vars.v } by E-App {\n" +
           @premises.map( (p) => p.toString(2) ).join(";\n") + "\n}"
       when 'E-Let'
         "#{ env }|- let #{ @vars.def.toString() } in #{ @vars.e2.toString() } evalto #{ @vars.v } by E-Let {\n" +
@@ -90,6 +100,14 @@ class Def
   toString: () ->
     "#{ @name } = #{ @value }"
 
+class Closure
+  constructor: (@env, @x, @e) ->
+
+  toString: () ->
+    env = @env.map( (def) => def.toString() ).join(', ')
+    "(#{ env })[fun #{ @x.toString() } -> #{ @e.toString() }]"
+
+
 parser.yy = { Node: Node };
 
 derive = (node, env) ->
@@ -105,6 +123,9 @@ derive = (node, env) ->
       [node.value, new DTNode('E-Int', {i:node.value}, env, [])]
     when 'BOOL'
       [node.value, new DTNode('E-Bool', {b:node.value}, env, [])]
+    when 'FUN'
+      c = new Closure(env, node.children[0], node.children[1])
+      [c, new DTNode('E-Fun', {c:c}, env, [])]
     when 'VAR'
       x = node.value
       def = env[(env.length - 1)]
@@ -113,6 +134,16 @@ derive = (node, env) ->
       else
         [v2, dtn] = derive(node, env[0..-2])
         [v2, new DTNode('E-Var2', {x:x, v2:v2}, env, [dtn]) ]
+    when 'APPLY'
+      [c, dtn1] = derive(node.children[0], env)
+      [v2, dtn2] = derive(node.children[1], env)
+      [v, dtn3] = derive(c.e, c.env.concat([ new Def(c.x.value, v2) ]))
+      [v, new DTNode(
+        'E-App',
+        {e1:node.children[0], e2:node.children[1], v:v},
+        env,
+        [dtn1, dtn2, dtn3]
+      )]
     when 'DEFVAR'
       x = node.children[0].value
       [v, dtn] = derive(node.children[1], env)
@@ -201,16 +232,14 @@ derive = (node, env) ->
         ],
       )]
     else
-      throw "Illegal Node"
+      throw "Illegal Token"
     
 inspect = (obj) ->
   console.log( util.inspect(obj, { depth: null }) )
 
 main = ->
-  tree = parser.parse("|- let x = let y = 3 - 2 in y * y in let y = 4 in x + y")
-  inspect(tree);
+  tree = parser.parse("|- let s = fun f -> fun g -> fun x -> f x (g x) in let k = fun x -> fun y -> x in s k k 7")
   [v, dtn] = derive(tree, [])
-  inspect(dtn);
   console.log(dtn.toString())
 
 main()

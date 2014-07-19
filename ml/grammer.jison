@@ -7,6 +7,7 @@
 
 \s+                   /* skip whitespace */
 "evalto"              return 'EVALTO'
+"fun"                 return 'FUN'
 "let"                 return 'LET'
 "in"                  return 'IN'
 "if"                  return 'IF'
@@ -15,6 +16,7 @@
 [0-9]+                return 'INT'
 "true"|"false"        return 'BOOL'
 [a-z]+                return 'ID'
+"->"                  return '->'
 "|-"                  return '|-'
 "="                   return '='
 "*"                   return '*'
@@ -31,12 +33,13 @@
 
 /* operator associations and precedence */
 
-%nonassoc LETEXP
+%nonassoc FUNEXP LETEXP
 %nonassoc IFEXP
 %left '<'
 %left '+' '-'
 %left '*'
 %left UMINUS
+%left APPLY
 
 %start expressions
 
@@ -66,21 +69,15 @@ env
         {$$ = new yy.Node('ENV', []);}
     ;
 
-e
-    : LET defvar IN e %prec LETEXP
+simplee
+    : '(' e ')'
+        {$$ = $2;}
+    | FUN var '->' e %prec FUNEXP
+        {$$ = new yy.Node('FUN', [$2, $4]);}
+    | LET defvar IN e %prec LETEXP
         {$$ = new yy.Node('LET', [$2, $4]);}
     | IF e THEN e ELSE e %prec IFEXP
         {$$ = new yy.Node('IF', [$2, $4, $6]);}
-    | e '<' e
-        {$$ = new yy.Node('LT', [$1, $3]);}
-    | e '+' e
-        {$$ = new yy.Node('PLUS', [$1, $3]);}
-    | e '-' e
-        {$$ = new yy.Node('MINUS', [$1, $3]);}
-    | e '*' e
-        {$$ = new yy.Node('TIMES', [$1, $3]);}
-    | '(' e ')'
-        {$$ = $2;}
     | var
         {$$ = $1;}
     | '-' INT %prec UMINUS
@@ -89,5 +86,20 @@ e
         {$$ = new yy.Node('INT', [], parseInt(yytext));}
     | BOOL
         {$$ = new yy.Node('BOOL', [], yytext === 'true');}
+    ;
+
+e
+    : simplee
+        {$$ = $1;}
+    | e simplee %prec APPLY
+        {$$ = new yy.Node('APPLY', [$1, $2]);}
+    | e '<' e
+        {$$ = new yy.Node('LT', [$1, $3]);}
+    | e '+' e
+        {$$ = new yy.Node('PLUS', [$1, $3]);}
+    | e '-' e
+        {$$ = new yy.Node('MINUS', [$1, $3]);}
+    | e '*' e
+        {$$ = new yy.Node('TIMES', [$1, $3]);}
     ;
 

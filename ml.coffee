@@ -273,9 +273,6 @@ derive = (node, env) ->
 inspect = (obj) ->
   console.log( util.inspect(obj, { depth: null }) )
 
-main = ->
-  tree = parser.parse("|- let fact = fun self -> fun n -> if n < 2 then 1 else n * self self (n - 1) in fact fact 3")
-  [v, dtn] = derive(tree, [])
-  console.log(dtn.toString())
-
-main()
+module.exports = (code) =>
+  derive(parser.parse(code), [])
+  
